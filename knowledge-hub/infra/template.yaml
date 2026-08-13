@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  knowledge-hub — 社内ナレッジ/FAQ管理 API (Spring Boot on Lambda + DynamoDB)。
+  AWS 常時無料枠に収まる構成: Lambda 100万リクエスト/月、API Gateway (HTTP API) は
+  12ヶ月無料枠、DynamoDB はプロビジョンド 25 RCU/WCU まで常時無料。
+
+Parameters:
+  CorsAllowedOrigin:
+    Type: String
+    Default: http://localhost:3000
+    Description: フロントエンド (Next.js) のオリジン
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 1024
+
+Resources:
+  ArticlesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: knowledge-hub-articles
+      # 常時無料枠 (アカウント全体で 25 RCU / 25 WCU) に収める。
+      # テーブル 5+5、GSI 5+5 で合計 10 RCU / 10 WCU を確保。
+      BillingMode: PROVISIONED
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: category
+          AttributeType: S
+        - AttributeName: updatedAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: category-index
+          KeySchema:
+            - AttributeName: category
+              KeyType: HASH
+            - AttributeName: updatedAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: knowledge-hub-api
+      Handler: com.knowledgehub.api.StreamLambdaHandler::handleRequest
+      Runtime: java21
+      CodeUri: ../backend/target/knowledge-hub-api-0.1.0-lambda.jar
+      # SnapStart で Spring Boot のコールドスタートを短縮する
+      SnapStart:
+        ApplyOn: PublishedVersions
+      AutoPublishAlias: live
+      Environment:
+        Variables:
+          SPRING_PROFILES_ACTIVE: prod
+          TABLE_NAME: !Ref ArticlesTable
+          CORS_ALLOWED_ORIGINS: !Ref CorsAllowedOrigin
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ArticlesTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /api/{proxy+}
+            Method: ANY
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Name: knowledge-hub-http-api
+
+Outputs:
+  ApiEndpoint:
+    Description: API のベース URL (フロントエンドの API_BASE_URL に設定する)
+    Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com'
+  TableName:
+    Description: DynamoDB テーブル名
+    Value: !Ref ArticlesTable

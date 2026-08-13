@@ -1,0 +1,37 @@
+#!/bin/sh
+# ai-dev-flow: 禁止パターンLint（コミット前検査）
+# install-git-hooks.(ps1|sh) が __VERIFY_DIFF_PATH__ を実パスに置換して
+# .git/hooks/pre-commit として配置する。
+# どのエージェント（Claude Code / Codex / Cursor / 人間）経由のコミットでも作動する。
+#
+# 終了コード 1（ERROR違反）のときのみコミットをブロックする。
+# Lint 自体の実行エラー（Python 不在等）はフェイルオープン（警告して通す）。
+
+# 実際に動く Python を検出する（Windows では python3 が Store のスタブに解決されることがあるため、
+# 起動テストを通った候補だけを採用する）
+PY=""
+for cand in python3 python py; do
+    if command -v "$cand" >/dev/null 2>&1 && "$cand" -c "import sys" >/dev/null 2>&1; then
+        PY="$cand"
+        break
+    fi
+done
+if [ -z "$PY" ]; then
+    echo "[ai-dev-flow] WARN: 動作する python が見つからないため禁止パターンLintをスキップしました" >&2
+    exit 0
+fi
+
+"$PY" "__VERIFY_DIFF_PATH__" --cached --repo "$(git rev-parse --show-toplevel)"
+status=$?
+
+if [ "$status" -eq 1 ]; then
+    echo "" >&2
+    echo "[ai-dev-flow] コミットをブロックしました: 禁止パターン（ERROR）が含まれています。" >&2
+    echo "  違反を解消してから再度コミットしてください。" >&2
+    echo "  誤検知と考える場合は独断で回避せず、ルール（guard-rules.json）の管理者に確認してください。" >&2
+    exit 1
+fi
+if [ "$status" -ne 0 ]; then
+    echo "[ai-dev-flow] WARN: 禁止パターンLintが実行エラー（exit $status）のためスキップしました" >&2
+fi
+exit 0

@@ -1,0 +1,42 @@
+{
+  "_comment": [
+    "guard-rules.json — 禁止パターンLint（verify_diff.py）のルール定義。導入時に必ず編集する。",
+    "project.yaml の constraints（AIが読む宣言）のうち、正規表現で機械検出できるものをここに実装する。",
+    "repos: 検査対象リポジトリ（project.yaml のあるプロジェクトルートからの相対パス）。",
+    "rules[].severity: ERROR=コミットをブロック／WARN=報告のみ。",
+    "rules[].extensions: 対象拡張子の配列（null=scan_extensions 全体）。",
+    "rules[].flags: 'i' で大文字小文字を無視。",
+    "rules[].suppressed_by: 同じ行で指定IDのルールが検出済みなら報告を抑止（汎用ルールの二重報告防止）。",
+    "以下の rules は例。sql-destructive は多くの業務システムで有効なので残すことを推奨、",
+    "example-* は自プロジェクトの禁止事項に置き換える。運用中に同種の失敗が3回起きたらルールを追加する。"
+  ],
+  "repos": ["."],
+  "scan_extensions": [".java", ".ts", ".tsx", ".js", ".jsx", ".sql", ".html", ".xml", ".jsp", ".py", ".cs", ".vue"],
+  "exclude_segments": ["target", "node_modules", "dist", "build", ".git", "vendor", "generated"],
+  "rules": [
+    {
+      "id": "sql-destructive",
+      "severity": "ERROR",
+      "extensions": null,
+      "pattern": "\\bDELETE\\s+FROM\\b|\\bTRUNCATE\\s+TABLE\\b|\\bDROP\\s+TABLE\\b",
+      "flags": "i",
+      "message": "破壊的SQL（物理削除・TRUNCATE・DROP）を検出。論理削除等の正規手段を使う（プロジェクトの constraints 参照）"
+    },
+    {
+      "id": "example-forbidden-api",
+      "severity": "ERROR",
+      "extensions": [".java"],
+      "pattern": "\\b(createStatement|prepareStatement|prepareCall)\\s*\\(",
+      "flags": "",
+      "message": "例: 生SQL（JDBC直叩き）は禁止。O/Rマッパーの正規APIを使う（自プロジェクトのルールに置き換えること）"
+    },
+    {
+      "id": "example-debug-leftover",
+      "severity": "WARN",
+      "extensions": [".ts", ".tsx", ".js", ".jsx", ".vue"],
+      "pattern": "console\\.log\\s*\\(",
+      "flags": "",
+      "message": "例: console.log の残留を検出（デバッグコードの消し忘れ確認。不要なら本ルールを削除）"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+---
+description: AI修正フロー（ai-dev-flow）の参照先とプロジェクト共通ルール
+alwaysApply: true
+---
+
+本プロジェクトには `.ai-flow/` の修正フローが導入されている。
+
+- 修正タスクは `/ai-flow` コマンドで開始する。フロー統括は `.ai-flow/FLOW.md` が正（フェーズ 0〜8・S/M/L 分岐・ゲート定義）
+- プロジェクト固有の値（技術スタック・ビルド/テストコマンド・禁止事項・リスク分類・コミット規約）は `.ai-flow/project.yaml` が正。コード修正の前に必ず読む
+- 単発の小修正でも `project.yaml` の `constraints` と `git`（ブランチプレフィックス・コミット書式）は遵守する
+- ユーザーへ確認する前に `.ai-flow/knowledge/defaults.md`・`precedents.md` を引く（記載済み項目は確認不要）
+- 独立レビュー（`.ai-flow/flow/5-review.md`）を実装と同じチャットで行わない（新しいチャットで `/ai-flow-review`）
+- コミット/push の可否は `.ai-flow/project.yaml` の `git.commit_policy` に従う（`manual`: ユーザー明示指示時のみ／`auto`: フェーズ完了ごとに自動コミット・push、最終承認は PR マージ）。pre-commit の禁止パターンLintにブロックされたら違反を解消する（`--no-verify` 等で回避しない）

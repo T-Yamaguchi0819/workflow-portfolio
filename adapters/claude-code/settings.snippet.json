@@ -1,0 +1,17 @@
+{
+  "_comment": "このスニペットの hooks をプロジェクトの .claude/settings.json にマージする（既存の hooks 定義がある場合は配列に追記）",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell|Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/pretooluse_guard.py\"",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

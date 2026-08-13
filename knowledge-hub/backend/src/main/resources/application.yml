@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: knowledge-hub-api
+  profiles:
+    # プロファイル未指定 (ローカル開発) では AWS 不要のインメモリ実装で起動する。
+    # Lambda では SPRING_PROFILES_ACTIVE=prod を設定して DynamoDB 実装に切り替える。
+    default: local
+
+app:
+  dynamodb:
+    table-name: ${TABLE_NAME:knowledge-hub-articles}
+    # DynamoDB Local を使う場合のみ設定する (例: http://localhost:8000)
+    endpoint: ${DYNAMODB_ENDPOINT:}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
+server:
+  # 8080 が塞がっている環境では PORT で上書きする (例: PORT=8081)
+  port: ${PORT:8080}

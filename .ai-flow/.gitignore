@@ -1,0 +1,6 @@
+# 個人・マシン固有設定（defaults.local.example.md から各自生成する）
+knowledge/defaults.local.md
+
+# 作業中タスクの一時成果物を残さない運用の場合はコメントを外す
+# （既定では work/ もコミットし、チームでタスク状態を共有する）
+# work/

@@ -1,0 +1,137 @@
+# =============================================================================
+# project.yaml — プロジェクト適用設定（導入時に必ず編集する）
+# =============================================================================
+# ai-dev-flow のフロー定義（FLOW.md / flow/ / roles/）はエージェント・プロジェクト
+# 非依存で書かれており、プロジェクト固有の値はすべて本ファイルに集約する。
+# 「TODO:」の箇所を自プロジェクトの値に置き換えること。
+# 機械検査する禁止パターンは guards/guard-rules.json に定義する（本ファイルの
+# constraints は AI が読むための宣言、guard-rules.json は機械が検査する実装）。
+# =============================================================================
+
+project:
+  name: "TODO: プロジェクト名"
+  description: "TODO: 一言説明（例: ○○株式会社の安全管理システム）"
+  # システムの重要度。フロー全体の慎重さ（ゲートの厳格さ）の根拠になる
+  criticality: "TODO: 例) 本番稼働中の企業システム（災害・事故情報を扱う重要システム）"
+  # ユーザーとの対話言語（思考言語はエージェント任せでよい）
+  language: "日本語"
+
+# 対象リポジトリ（複数可）。path は本ファイルのあるプロジェクトルートからの相対
+repos:
+  - path: "."
+    stack: "TODO: 例) Java 8 / Spring 4.3 / DBFlute 1.1 / Oracle 11g"
+    notes: "TODO: 例) WAR を Tomcat 8 にデプロイ"
+
+git:
+  # 修正時に必ず切るブランチのプレフィックス
+  branch_prefix: "ai/"
+  # コミットメッセージ書式（1行目の形式と本文の必須事項）
+  commit_format: |
+    TODO: 例) 1行目「【{カテゴリ}】{対象画面/機能}_{修正概要}」
+    本文に Why（なぜこの変更が必要か＝背景・目的）を必ず含める（What の羅列だけにしない）
+  # コミット/push/PR の承認モード（運用ルールは FLOW.md「コミットポリシーと PR 運用」節が正）
+  #   manual: コミット/push はユーザーが明示的に指示した場合のみ
+  #   auto:   フェーズ完了ごとに自動コミット・push し、[8] で PR を発行。最終承認は PR マージ
+  #           （前提: デフォルトブランチのブランチ保護＝直 push 禁止・PR レビュー必須）
+  commit_policy: "manual"
+  # コミットに含めてはいけないもの
+  commit_excludes:
+    - "TODO: 例) 実行時生成物（*.log 等）"
+
+# GitHub Issue ミラー（人間向け可視化・承認チャネル）。有効化しても正はあくまで
+# ファイル（_state.md・成果物）であり、運用ルールは FLOW.md の「GitHub Issue ミラー」節が正
+issue_sync:
+  enabled: false          # TODO: GitHub Issue で進捗を可視化する場合 true（gh CLI と gh auth login が前提）
+  repo: ""                # 空なら現在のリポジトリ。別リポジトリで管理する場合 "owner/repo"
+  labels: ["ai-flow"]     # 作成する Issue に付与するラベル（存在しないラベルは事前に作成しておく）
+
+# PR 運用（git.commit_policy: auto の場合に使用。テンプレートは templates/pr.md）
+pr:
+  base: ""                # PR のベースブランチ。空ならリポジトリのデフォルトブランチ
+  draft: false            # PR を draft で作成するか
+  ai_review: true         # PR 発行後、[5]とは別コンテキストで最終 diff を AI 再レビューし、結果を PR コメントで投稿する
+
+build:
+  # コンパイル・ビルド確認のコマンド（[4]実装の完了条件で使う）
+  compile_command: "TODO: 例) mvn -q compile ／ npm run build"
+  # 自動テストの実行コマンド（[3][6] で使う）
+  test_command: "TODO: 例) mvn test ／ npx playwright test"
+  # テストコードの置き場所・命名規則
+  test_location: "TODO: 例) src/test/java 配下、E2E は e2e/ 配下"
+
+verify:
+  # [6]動作確認の方法（自動 E2E／手動確認手順書 等）
+  method: "TODO: 例) Playwright E2E ＋ 画面キャプチャ取得"
+  # エビデンス（キャプチャ・ログ）の保存先
+  evidence_dir: "TODO: 例) .ai-flow/work/{タスク名}/evidence/"
+  # ローカル起動手順の参照先（あれば）
+  local_env: "TODO: 例) 起動手順は docs/dev-setup.md 参照"
+
+# [7]ドキュメント反映。正式ドキュメントがないプロジェクトは enabled: false
+# 対象は設計書に限らず、テスト仕様書・運用手順書等も列挙する。
+# Excel の書式は「style（検証用スペック）＋雛形 .xlsx（生成用）」のハイブリッドで管理する
+# （docs-style/README.md 参照。導入時に guards/extract_excel_style.py で下書きを生成し人間が確定）。
+# sample・style が未記入の対象は、[0]初期化でサンプルの有無をユーザーに確認される。
+docs:
+  enabled: true
+  targets:
+    - name: "TODO: 例) 基本設計書"
+      location: "TODO: パス"
+      format: "TODO: 例) excel ／ markdown ／ word"
+      sample: ""        # 書式抽出に使う代表サンプルのパス（excel の場合に記入。「なし」も可）
+      style: ""         # 確定済み style YAML（例: docs-style/基本設計書.style.yaml）。[7] の書式検査に使う
+      templates: []     # 生成用の雛形（例: [docs-style/雛形_機能節.xlsx]）。新規作成は雛形コピーで行う
+      notes: "TODO: 例) 専用の更新手順・検証手順があればその参照先"
+    - name: "TODO: 例) テスト仕様書"
+      location: "TODO: パス"
+      format: "TODO: 例) excel"
+      sample: ""
+      style: ""
+      templates: []
+      notes: "TODO: なければこの対象ごと削除してよい"
+  # ドキュメント更新に特別な手順・禁止事項がある場合の参照先
+  policy: "TODO: 例) 更新手順は docs/document-policy.md 参照（なければ「なし」）"
+  # Excel への書き込み経路。openpyxl での直接保存は図形・グラフを破壊し得るため原則禁止
+  # （機械強制する場合は adapters/claude-code/hooks/pretooluse_guard.py の拡張ポイント参照）
+  excel_write_policy: "TODO: 例) Excel COM（pywin32）経由で更新。openpyxl での保存禁止"
+
+# プロジェクト固有の絶対禁止事項・必須パターン（AI が全フェーズで遵守する宣言）。
+# 機械検出可能なものは guards/guard-rules.json にも必ず定義する
+constraints:
+  forbidden:
+    - "TODO: 例) 物理削除禁止（論理削除 DELETE_FLG=\"1\" を使う）"
+    - "TODO: 例) 生SQL禁止（O/R マッパーの正規 API を使う）"
+  required:
+    - "TODO: 例) 登録・更新時は監査カラム（登録者/登録日時・更新者/更新日時）を必ず設定"
+  # バージョン起因等の「事故多発ポイント」（例: Oracle 11g では FETCH NEXT 構文不可）
+  pitfalls:
+    - "TODO: なければ「なし」"
+
+# リスク判定（[2]Plan で使用。High 以上は独立レビュー必須、Critical は人間レビュー必須）
+risk:
+  critical:
+    - "認証・認可"
+    - "DBスキーマ変更"
+    - "TODO: 例) 決済・個人情報・機微データの処理"
+  high:
+    - "SQL・データアクセス層"
+    - "外部API・外部I/F"
+    - "トランザクション制御"
+  # 上記に該当しないロジック変更は Medium、文言・コメントのみは Low
+
+flow:
+  # 作業ディレクトリ（状態・成果物の置き場）
+  work_dir: ".ai-flow/work"
+  # 規模判定に迷った場合のデフォルト
+  size_default: "M"
+
+# フロー評価（実績.md の metrics ブロックを evaluate_flow.py が集計し、目標と突合する）
+evaluation:
+  # 何タスク完了ごとに振り返り（レポート生成＋ユーザーとのレビュー）を行うか
+  review_cycle: 10
+  # KPI 目標値。定義しない項目は判定なしで実績のみ表示される
+  targets:
+    reduction_pct_min: 50        # 工数削減率（平均）の下限（%）
+    first_pass_rate_min: 70      # 初回PASS率の下限（%）
+    human_findings_avg_max: 1.0  # 1タスクあたりの人間追加指摘の上限（平均・件）
+    rework_avg_max: 1.0          # 平均手戻り回数の上限（回）
