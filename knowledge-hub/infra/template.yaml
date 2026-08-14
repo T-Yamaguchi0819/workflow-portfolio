@@ -24,7 +24,10 @@ Resources:
   ArticlesTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: knowledge-hub-articles
+      # Stack-name based so the same template serves prod (stack "knowledge-hub"
+      # -> "knowledge-hub-articles", identical to the previous fixed name, so no
+      # replacement) and dev (stack "knowledge-hub-dev" -> "knowledge-hub-dev-articles").
+      TableName: !Sub '${AWS::StackName}-articles'
       # Stay within the always-free tier (25 RCU / 25 WCU per account):
       # table 5+5 and GSI 5+5 = 10 RCU / 10 WCU total. Do NOT switch to
       # on-demand billing (not covered by the always-free tier).
@@ -58,7 +61,7 @@ Resources:
   ApiFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: knowledge-hub-api
+      FunctionName: !Sub '${AWS::StackName}-api'
       Handler: com.knowledgehub.api.StreamLambdaHandler::handleRequest
       Runtime: java21
       CodeUri: ../backend/target/knowledge-hub-api-0.1.0-lambda.jar
@@ -85,7 +88,7 @@ Resources:
   HttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
-      Name: knowledge-hub-http-api
+      Name: !Sub '${AWS::StackName}-http-api'
 
 Outputs:
   ApiEndpoint:

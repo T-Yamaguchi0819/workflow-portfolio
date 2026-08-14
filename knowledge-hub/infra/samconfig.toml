@@ -15,3 +15,15 @@ image_repositories = []
 
 [default.global.parameters]
 region = "ap-northeast-1"
+
+# Shared dev environment for ai/* branches: sam deploy --config-env dev
+# No parameter_overrides: CorsAllowedOrigin stays at the template default
+# (API is called via SSR only, no direct browser access to the dev API).
+[dev.deploy.parameters]
+stack_name = "knowledge-hub-dev"
+resolve_s3 = true
+s3_prefix = "knowledge-hub-dev"
+region = "ap-northeast-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
+image_repositories = []
