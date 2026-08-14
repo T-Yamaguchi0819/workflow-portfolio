@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+# NOTE: Keep this file ASCII-only (SAM/CFn CLI on Windows reads templates with cp932).
+Description: >
+  GitHub Actions OIDC federation for knowledge-hub CD.
+  Creates the GitHub OIDC identity provider and a deploy role that can only be
+  assumed by workflows on the main branch of the specified repository.
+  No long-lived AWS access keys are stored in GitHub.
+
+Parameters:
+  GitHubOrg:
+    Type: String
+    Default: T-Yamaguchi0819
+    Description: GitHub user/organization name
+  RepositoryName:
+    Type: String
+    Default: workflow-portfolio
+    Description: GitHub repository name
+
+Resources:
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      # GitHub rotates certs; AWS validates against trusted root CAs and this
+      # thumbprint acts as a fallback pin (official GitHub thumbprint).
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: knowledge-hub-github-deploy
+      Description: Assumed by GitHub Actions (main branch only) to run sam deploy
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOidcProvider
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                # Restrict to pushes on the main branch of this repo only
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${RepositoryName}:ref:refs/heads/main
+      # Personal sandbox account: AdministratorAccess is acceptable because the
+      # trust policy is limited to one repo/branch. For least privilege, replace
+      # with a policy scoped to CloudFormation/S3/Lambda/APIGW/DynamoDB/IAM/Logs.
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+Outputs:
+  DeployRoleArn:
+    Description: Set this as role-to-assume in the GitHub Actions workflow
+    Value: !GetAtt DeployRole.Arn

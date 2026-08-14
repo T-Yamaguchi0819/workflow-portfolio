@@ -76,11 +76,15 @@ mvn test
 
 ### バックエンド (SAM)
 
+**通常は自動デプロイ**: main ブランチへの push で GitHub Actions (`.github/workflows/deploy.yml`) がテスト → `sam deploy` → 疎通確認まで実行する。認証は OIDC(`infra/github-oidc.yaml` の `knowledge-hub-github-deploy` ロール。main ブランチ限定の AssumeRole で、GitHub に AWS キーは保存しない)。
+
+手動でデプロイする場合:
+
 ```bash
 cd backend
 mvn -q package -DskipTests
 cd ../infra
-sam deploy --guided
+sam deploy --profile portfolio
 ```
 
 `sam deploy` の出力 `ApiEndpoint` がフロントエンドの `API_BASE_URL` になる。

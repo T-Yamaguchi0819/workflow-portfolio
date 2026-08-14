@@ -1,0 +1,66 @@
+name: Deploy
+
+# バックエンド(SAM スタック)の自動デプロイ。
+# 認証は OIDC (infra/github-oidc.yaml の knowledge-hub-github-deploy ロール)。
+# 長期アクセスキーは GitHub に保存しない。
+# フロントエンドは Amplify Hosting の GitHub 連携が別途自動デプロイする(本WFの対象外)。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'knowledge-hub/backend/**'
+      - 'knowledge-hub/infra/template.yaml'
+      - 'knowledge-hub/infra/samconfig.toml'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # OIDC トークンの発行に必要
+  contents: read
+
+concurrency:
+  group: deploy-knowledge-hub
+  cancel-in-progress: false
+
+jobs:
+  deploy-backend:
+    name: Backend (SAM deploy)
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # テストを通してからパッケージする(壊れたビルドをデプロイしない)
+      - name: Test & package
+        working-directory: knowledge-hub/backend
+        run: mvn -B verify
+
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::568351185010:role/knowledge-hub-github-deploy
+          aws-region: ap-northeast-1
+
+      - name: SAM deploy
+        working-directory: knowledge-hub/infra
+        run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
+
+      - name: Smoke test
+        run: |
+          API=$(aws cloudformation describe-stacks --stack-name knowledge-hub \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiEndpoint'].OutputValue" --output text)
+          echo "API endpoint: $API"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$API/api/articles")
+          echo "GET /api/articles -> $STATUS"
+          test "$STATUS" = "200"
