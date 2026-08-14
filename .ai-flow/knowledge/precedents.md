@@ -84,3 +84,13 @@
 | 人間がどう修正したか | ユーザーのデプロイ失敗報告を受け、template.yaml を ASCII（英語コメント）のみに書き換え。ファイル冒頭に ASCII-only の注記を追加 |
 | 今後の防止策 | SAM/CloudFormation テンプレートは ASCII のみで書く（このリポジトリの慣行として固定） |
 | ルール化ステータス | 未 |
+
+| 項目 | 内容 |
+|------|------|
+| ID | F-006 |
+| 発生日／タスク | 2026-08-14／GitHub Actions CD 構築 |
+| AIが誤った内容 | deploy ジョブに `environment: production` を指定し、OIDC トークンの sub が `environment:production` 形式に変わって IAM 信頼条件（`ref:refs/heads/main`）と不一致 → AssumeRole 拒否で CD 失敗 |
+| 誤った理由・見落としたもの | GitHub Environment 指定が OIDC の sub クレーム形式を変えるという仕様 |
+| 人間がどう修正したか | Actions の失敗ログ（Not authorized to perform sts:AssumeRoleWithWebIdentity）から特定し、environment 指定を削除 |
+| 今後の防止策 | OIDC の信頼条件と workflow の environment 指定は必ずセットで設計する（片方だけ変えない）。deploy.yml にコメントで注意書き済み |
+| ルール化ステータス | 未 |

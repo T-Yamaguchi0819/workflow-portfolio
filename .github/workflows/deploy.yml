@@ -27,7 +27,9 @@ jobs:
   deploy-backend:
     name: Backend (SAM deploy)
     runs-on: ubuntu-latest
-    environment: production
+    # NOTE: GitHub Environment は指定しない。指定すると OIDC トークンの sub が
+    # environment:xxx 形式になり、IAM ロールの信頼条件 (ref:refs/heads/main) と
+    # 一致しなくなる。Environment 保護を使う場合は信頼ポリシー側も変更すること。
     steps:
       - uses: actions/checkout@v4
 
