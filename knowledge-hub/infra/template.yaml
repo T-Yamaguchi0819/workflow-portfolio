@@ -1,28 +1,33 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
+# NOTE: Keep this file ASCII-only. SAM CLI on Windows reads templates with the
+# system locale encoding (cp932), so non-ASCII characters break `sam deploy`.
 Description: >
-  knowledge-hub — 社内ナレッジ/FAQ管理 API (Spring Boot on Lambda + DynamoDB)。
-  AWS 常時無料枠に収まる構成: Lambda 100万リクエスト/月、API Gateway (HTTP API) は
-  12ヶ月無料枠、DynamoDB はプロビジョンド 25 RCU/WCU まで常時無料。
+  knowledge-hub - Internal knowledge/FAQ API (Spring Boot on Lambda + DynamoDB).
+  Designed to fit the AWS always-free tier: Lambda 1M req/month, DynamoDB
+  provisioned 25 RCU/WCU, API Gateway HTTP API (12-month free tier).
 
 Parameters:
   CorsAllowedOrigin:
     Type: String
     Default: http://localhost:3000
-    Description: フロントエンド (Next.js) のオリジン
+    Description: Origin of the Next.js frontend
 
 Globals:
   Function:
     Timeout: 30
-    MemorySize: 1024
+    # New AWS accounts start with a 512MB Lambda memory quota. Raise this to
+    # 1024 after a Service Quotas increase if cold starts need to be faster.
+    MemorySize: 512
 
 Resources:
   ArticlesTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: knowledge-hub-articles
-      # 常時無料枠 (アカウント全体で 25 RCU / 25 WCU) に収める。
-      # テーブル 5+5、GSI 5+5 で合計 10 RCU / 10 WCU を確保。
+      # Stay within the always-free tier (25 RCU / 25 WCU per account):
+      # table 5+5 and GSI 5+5 = 10 RCU / 10 WCU total. Do NOT switch to
+      # on-demand billing (not covered by the always-free tier).
       BillingMode: PROVISIONED
       ProvisionedThroughput:
         ReadCapacityUnits: 5
@@ -57,7 +62,7 @@ Resources:
       Handler: com.knowledgehub.api.StreamLambdaHandler::handleRequest
       Runtime: java21
       CodeUri: ../backend/target/knowledge-hub-api-0.1.0-lambda.jar
-      # SnapStart で Spring Boot のコールドスタートを短縮する
+      # SnapStart mitigates JVM cold starts (no extra cost for Java runtimes)
       SnapStart:
         ApplyOn: PublishedVersions
       AutoPublishAlias: live
@@ -84,8 +89,8 @@ Resources:
 
 Outputs:
   ApiEndpoint:
-    Description: API のベース URL (フロントエンドの API_BASE_URL に設定する)
+    Description: Base URL of the API (set as API_BASE_URL in the frontend)
     Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com'
   TableName:
-    Description: DynamoDB テーブル名
+    Description: DynamoDB table name
     Value: !Ref ArticlesTable

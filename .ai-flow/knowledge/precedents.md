@@ -38,9 +38,49 @@
 | 項目 | 内容 |
 |------|------|
 | ID | F-001 |
-| 発生日／タスク | {YYYY-MM-DD}／{タスクNo} |
-| AIが誤った内容 | {} |
-| 誤った理由・見落としたもの | {} |
-| 人間がどう修正したか | {} |
-| 今後の防止策 | {} |
-| ルール化ステータス | {未／guard-rules 追加済み（rule id）／flow・roles 追記済み／defaults 追記済み} |
+| 発生日／タスク | 2026-08-14／knowledge-hub 初回AWSデプロイ |
+| AIが誤った内容 | maven-shade の `<transformers>` を素で書き、spring-boot-starter-parent の shade pluginManagement 設定とマージされて設定解析エラー（Cannot find 'resource' in ServicesResourceTransformer） |
+| 誤った理由・見落としたもの | 親POM側にも shade の設定があり、Maven が要素をインデックス対応でマージすることを見落とした |
+| 人間がどう修正したか | エラー報告を受け、`<transformers combine.self="override">` で親設定を上書き |
+| 今後の防止策 | Spring Boot 親POM配下で shade を使う場合は combine.self="override" を必ず付ける |
+| ルール化ステータス | 未（同種3回でルール化検討） |
+
+| 項目 | 内容 |
+|------|------|
+| ID | F-002 |
+| 発生日／タスク | 2026-08-14／knowledge-hub 初回AWSデプロイ |
+| AIが誤った内容 | spring-boot:repackage 後の jar（BOOT-INF 構造）を shade が包み、Lambda で Handler が ClassNotFoundException |
+| 誤った理由・見落としたもの | 同一 package フェーズ内で repackage → shade の順に実行されることを考慮していなかった |
+| 人間がどう修正したか | Lambda ログの ClassNotFound から特定。spring-boot-maven-plugin に `<classifier>boot</classifier>` を設定しメイン成果物をプレーン jar のまま維持 |
+| 今後の防止策 | shade と spring-boot-maven-plugin を併用する場合は classifier 設定が必須 |
+| ルール化ステータス | 未 |
+
+| 項目 | 内容 |
+|------|------|
+| ID | F-003 |
+| 発生日／タスク | 2026-08-14／knowledge-hub 初回AWSデプロイ |
+| AIが誤った内容 | spring.factories を AppendingTransformer で単純結合。同一キーが後勝ちになり EnvironmentPostProcessorApplicationListener が消えて application.yml が読み込まれず、SnapStart 初期化で起動失敗 |
+| 誤った理由・見落としたもの | Properties は重複キーが後勝ちであること。spring-boot と spring-boot-autoconfigure が同じキーを持つこと |
+| 人間がどう修正したか | 「placeholder 未解決」ログ→結合後の spring.factories を実際に dump して重複キーを確認。Spring Boot 提供の PropertiesMergingResourceTransformer に置換 |
+| 今後の防止策 | Spring Boot を shade する場合、spring.factories は必ず PropertiesMergingResourceTransformer でマージする |
+| ルール化ステータス | 未 |
+
+| 項目 | 内容 |
+|------|------|
+| ID | F-004 |
+| 発生日／タスク | 2026-08-14／knowledge-hub 初回AWSデプロイ |
+| AIが誤った内容 | API Gateway **HTTP API**（ペイロード v2.0）に対し REST API（v1.0）用の getAwsProxyHandler を実装し、InvalidRequestEventException で全リクエスト 500 |
+| 誤った理由・見落としたもの | HTTP API のデフォルトペイロード形式が v2.0 であること |
+| 人間がどう修正したか | Lambda ログから特定し getHttpApiV2ProxyHandler + HttpApiV2ProxyRequest に変更 |
+| 今後の防止策 | aws-serverless-java-container 使用時は API Gateway の種類（REST/HTTP）とハンドラの対応を必ず確認 |
+| ルール化ステータス | 未 |
+
+| 項目 | 内容 |
+|------|------|
+| ID | F-005 |
+| 発生日／タスク | 2026-08-14／knowledge-hub 初回AWSデプロイ |
+| AIが誤った内容 | SAM の template.yaml に日本語コメントを記載。Windows の SAM CLI がロケールエンコーディング（cp932）で読み UnicodeDecodeError |
+| 誤った理由・見落としたもの | SAM CLI (Windows) がテンプレートを UTF-8 でなくシステムロケールで読むこと |
+| 人間がどう修正したか | ユーザーのデプロイ失敗報告を受け、template.yaml を ASCII（英語コメント）のみに書き換え。ファイル冒頭に ASCII-only の注記を追加 |
+| 今後の防止策 | SAM/CloudFormation テンプレートは ASCII のみで書く（このリポジトリの慣行として固定） |
+| ルール化ステータス | 未 |

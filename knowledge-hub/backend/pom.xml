@@ -70,11 +70,25 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <!-- repackage 後の実行可能 jar は -boot 付きで別出力にし、メイン成果物は
+               プレーン jar のまま残す。shade (Lambda 用) が BOOT-INF 構造を
+               包んでしまい Handler が ClassNotFound になるのを防ぐ -->
+          <classifier>boot</classifier>
+        </configuration>
       </plugin>
       <!-- Lambda デプロイ用 zip (spring-boot fat jar とは別に shade で作る) -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
+        <dependencies>
+          <!-- PropertiesMergingResourceTransformer (spring.factories のキー単位マージ) の提供元 -->
+          <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <version>3.5.4</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <phase>package</phase>
@@ -95,9 +109,13 @@
                   </excludes>
                 </filter>
               </filters>
-              <transformers>
+              <!-- combine.self: spring-boot-starter-parent の shade 設定とのマージで
+                   transformer の対応がずれて設定解析に失敗するため、ここで完全に上書きする -->
+              <transformers combine.self="override">
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                <!-- 単純結合 (AppendingTransformer) だと同一キーが後勝ちで消えるため、
+                     キー単位で値をマージする Spring Boot 提供の transformer を使う -->
+                <transformer implementation="org.springframework.boot.maven.PropertiesMergingResourceTransformer">
                   <resource>META-INF/spring.factories</resource>
                 </transformer>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
