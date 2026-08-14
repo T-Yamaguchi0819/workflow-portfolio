@@ -1,0 +1,49 @@
+== knowledge-hub-dev スタック Parameters/Outputs (CORS デフォルト確認) ==
+{
+    "StackStatus": "CREATE_COMPLETE",
+    "Parameters": [
+        {
+            "ParameterKey": "CorsAllowedOrigin",
+            "ParameterValue": "http://localhost:3000"
+        }
+    ],
+    "Outputs": [
+        {
+            "OutputKey": "TableName",
+            "OutputValue": "knowledge-hub-dev-articles",
+            "Description": "DynamoDB table name"
+        },
+        {
+            "OutputKey": "ApiEndpoint",
+            "OutputValue": "https://rfpwpg8xo5.execute-api.ap-northeast-1.amazonaws.com",
+            "Description": "Base URL of the API (set as API_BASE_URL in the frontend)"
+        }
+    ]
+}
+== DynamoDB プロビジョンドキャパシティ (prod/dev 合計 20/20 <= 25) ==
+{
+    "TableName": "knowledge-hub-articles",
+    "BillingMode": null,
+    "Table_RCU": 5,
+    "Table_WCU": 5,
+    "GSI": [
+        {
+            "Index": "category-index",
+            "RCU": 5,
+            "WCU": 5
+        }
+    ]
+}
+{
+    "TableName": "knowledge-hub-dev-articles",
+    "BillingMode": null,
+    "Table_RCU": 5,
+    "Table_WCU": 5,
+    "GSI": [
+        {
+            "Index": "category-index",
+            "RCU": 5,
+            "WCU": 5
+        }
+    ]
+}

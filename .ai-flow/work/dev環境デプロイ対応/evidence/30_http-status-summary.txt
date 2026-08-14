@@ -1,0 +1,37 @@
+# [6] 動作確認 HTTP ステータスサマリ（2026-08-14 実施。curl -w の実測値を転記）
+# dev API  = https://rfpwpg8xo5.execute-api.ap-northeast-1.amazonaws.com
+# dev 前面 = https://ai-dev-env-deploy.d1e1o87p5asykz.amplifyapp.com
+# prod API = https://nx7936lj07.execute-api.ap-northeast-1.amazonaws.com
+# prod 前面= https://main.d1e1o87p5asykz.amplifyapp.com
+
+## dev API CRUD・検索
+GET    {dev API}/api/articles (初期・空テーブル)                  -> 200  body=[]            (01)
+POST   {dev API}/api/articles (作成)                              -> 201  id=aea36ac9-...    (02)
+GET    {dev API}/api/articles (作成後一覧・1件)                   -> 200                     (03)
+GET    {dev API}/api/articles/aea36ac9-... (詳細)                 -> 200                     (04)
+PUT    {dev API}/api/articles/aea36ac9-... (更新)                 -> 200  updatedAt 更新     (05)
+GET    {dev API}/api/articles?q=ヤマビコ (キーワード検索)         -> 200  1件ヒット          (06)
+GET    {dev API}/api/articles?category=検証 (カテゴリ絞り込み)    -> 200  1件ヒット          (07)
+GET    {dev API}/api/articles?q=存在しない語                      -> 200  body=[]            (07b)
+POST   {dev API}/api/articles (title空・バリデーション)           -> 400  {"message","errors"} (08)
+DELETE {dev API}/api/articles/aea36ac9-...                        -> 204                     (09)
+GET    {dev API}/api/articles/aea36ac9-... (削除後)               -> 404  {"message","errors":[]} (09b)
+POST   {dev API}/api/articles (SSR確認用に再作成)                 -> 201  id=c24e3379-...    (20)
+
+## dev フロントエンド SSR（Amplify ブランチ環境）
+GET {dev 前面}/                             -> 307 Location=/articles（page.tsx の redirect 仕様どおり）(21b)
+GET {dev 前面}/ (-L 追従)                   -> 200  作成記事タイトルを含む (21)
+GET {dev 前面}/articles                     -> 200  作成記事タイトル・本文キーワードを含む (22)
+GET {dev 前面}/articles/c24e3379-...        -> 200  同上 (23)
+GET {dev 前面}/articles/new                 -> 200 (24)
+GET {dev 前面}/articles/c24e3379-.../edit   -> 200  作成記事タイトルを含む (25)
+GET {dev 前面}/articles?q=ヤマビコ          -> 200  記事タイトルを含む=ヒット (26)
+GET {dev 前面}/articles?category=検証       -> 200  記事タイトルを含む=ヒット (27)
+GET {dev 前面}/articles?q=存在しない語      -> 200  記事タイトルを含まない=0件表示 (28)
+
+## prod 回帰（read-only）
+GET {prod API}/api/articles (dev 操作前)    -> 200  1件 id=f77ef089-... (10)
+GET {prod API}/api/articles (dev 操作後)    -> 200  1件・同一 id・body 完全一致 (11)
+GET {prod API}/api/articles/c24e3379-... (dev の ID) -> 404（テーブル分離）(12)
+GET {prod 前面}/articles                    -> 200  prod 記事タイトル表示・dev 記事は含まれない (13)
+GET {prod 前面}/articles/f77ef089-...       -> 200 (14)

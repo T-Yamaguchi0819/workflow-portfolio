@@ -18,7 +18,15 @@
 
 | No | 機能名 | 概要 | 状態 |
 |----|--------|------|------|
-| 1 | dev環境デプロイ対応 | 開発段階ブランチ(ai/*)を AWS の共有 dev 環境へデプロイ可能にし、[6]動作確認をデプロイ済み dev 環境で行えるようにする | [5]レビュー PASS・チェンジセット検証済み。OIDC 更新→コミット/push→[6] へ |
+| 1 | dev環境デプロイ対応 | 開発段階ブランチ(ai/*)を AWS の共有 dev 環境へデプロイ可能にし、[6]動作確認をデプロイ済み dev 環境で行えるようにする | 完了（完了ゲート通過。PR マージ＝人間の最終承認のみ残） |
+
+### AWS 側作業の実施記録（2026-08-14、いずれも事前承認済み・profile=portfolio）
+
+- OIDC スタック `knowledge-hub-github-oidc` 更新完了。IAM 実機確認: sub = StringLike [main, ai/*]、aud = StringEquals 維持
+- コミット `5fe7b2e` を `ai/dev-env-deploy` へ push（guards ERROR 0）→ Deploy run 31774597681 成功（AssumeRole・SAM deploy・スモーク 200 すべて通過、3m34s）
+- dev スタック `knowledge-hub-dev` 新規作成完了。ApiEndpoint = `https://rfpwpg8xo5.execute-api.ap-northeast-1.amazonaws.com`、テーブル = `knowledge-hub-dev-articles`
+- Amplify update-app 完了: autoBranchCreation=true（patterns ai/* + ai/**）、branchAutoDeletion=true、ブランチ用 env API_BASE_URL=dev API。アプリレベル env（prod URL）は不変を確認
+- Amplify create-branch `ai/dev-env-deploy`（設定前 push 済みのため手動取り込み）+ start-job(RELEASE, job 1) 実行、ビルド完了待ち
 
 ### 要件メモ（統括把握の要件概要。[1]で正式確定する）
 
@@ -39,7 +47,13 @@
 
 | No | [0]初期化 | [1]要件/AC | [2]Plan | [3]テスト | [4]実装 | [5]レビュー | [6]動作確認 | [7]ドキュメント | [8]完了 |
 |----|----------|-----------|---------|----------|--------|------------|------------|---------------|--------|
-| 1 | ✓ | ✓ | ✓ | ➖ | ✓ | ✓ | | | |
+| 1 | ✓ | ✓ | ✓ | ➖ | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+<!-- [8]: 2026-08-14 実績記録・ナレッジ化まで完了、完了ゲート（ユーザー承認・コミット要否確認）待ち。実績.md 作成（first_pass=true・rework 0・ai_findings_effective 2・human_findings 0・escalations 0。工数系3項目は未計測のため null）。precedents.md へ P-001〜P-003（チェンジセット実機確認／OIDC StringLike 完全一致評価／Amplify 自動ブランチ作成の発火条件）と F-008（SAM CLI 未導入の誤検出）を追記。defaults.local.md へ SAM CLI 導入済み(1.152.0)を追記。evaluate_flow.py は完了タスク数1 < review_cycle(10) のため実行不要。一時成果物の削除候補なし（evidence/ は verify.md 参照の恒久エビデンス） -->
+
+<!-- [7]: 2026-08-14 完了。設計書.md §10 CD 節・テーブル定義書.md（物理名テンプレート表記+環境対応表+キャパシティ 20/25 注記）・knowledge-hub/README.md（2環境構成・CD 振り分け・Amplify 設定手順）を更新。precedents.md に記載慣行2件追記。詳細は No1_dev環境デプロイ対応/docs.md -->
+
+<!-- [6]: 2026-08-14 PASS。mvn test 16件全PASS。dev API CRUD/検索/エラー形式・dev フロント SSR（全ページ200・API データ反映・クエリURL）・prod 回帰（データ/URL 不変・テーブル分離）を curl + AWS CLI(read-only) で確認。エビデンス evidence/（対応表・判断記録は No1_dev環境デプロイ対応/verify.md）。テスト記事1件「dev 動作確認用 (SSR検証 verify-20260814)」を dev テーブルに残置（verify.md §6 に判断記録）。申し送り3件: main マージ時の prod デプロイ確認／Amplify ブランチ自動削除の実挙動／多階層ブランチの Amplify 実挙動（任意）＝verify.md §7 -->
 
 <!-- [5]: 2026-08-14 PASS(初回・往復0)。推奨指摘2件(コメント乖離)は対応済み。詳細は review.md。prod 無置換の事前検証も完了: sam deploy --no-execute-changeset で changeset 確認 → ApiFunction の Modify(Code のみ・ローカル再ビルド jar のハッシュ差)+ AutoPublishAlias の Version 回転のみ。FunctionName/テーブル/HttpApi は差分なし・Replacement なし → 命名変更起因の差分ゼロを実機確認。チェンジセットは削除済み -->
 
@@ -58,12 +72,20 @@
 - 2026-08-14 AWS 側操作（OIDC スタック更新・Amplify update-app/create-branch）は **AI が profile=portfolio で実行してよい**（各実行前に内容を報告する条件付き）（ユーザー回答）
 - 2026-08-14 prod 無置換の事前検証 `sam deploy --no-execute-changeset --profile portfolio`（チェンジセット作成のみ・実行せず削除）のローカル実施に同意（ユーザー回答）
 - 2026-08-14 **[5]ゲート通過**: レビュー結果（PASS・推奨2件対応済み）とチェンジセット検証結果を了承。**OIDC スタック更新→コミット&push→dev 初回デプロイ→Amplify 設定への進行を承認（コミット/push の明示指示を含む）**（ユーザー回答）
+- 2026-08-14 **[7]前ゲート通過**: [6]PASS の結果を了承し、[7]ドキュメント反映（設計書 CD 節／テーブル定義書の物理名・キャパシティ注記／knowledge-hub README の CD・無料枠・**Amplify 設定手順の記載先=README デプロイ節で確定**）への進行を承認（ユーザー回答）
 
 ## 未解決の確認事項
 
-- なし（Amplify 設定手順の記載先 = knowledge-hub/README.md デプロイ節の提案は [7] で正式確定）
+- なし（完了ゲート 2026-08-14 通過。最終承認は PR マージ＝人間が行う）
 
-## 適用したデフォルト（事後報告用）
+### 完了ゲートの回答記録（2026-08-14）
 
-- [ ] flow.size_default: M を暫定規模として適用（project.yaml）
-- [ ] ブランチ名は ASCII（`ai/dev-env-deploy`）を採用（flow/0-init.md の例示に倣う。Windows・CI・Amplify ブランチ連携での日本語ブランチ名の互換リスク回避）
+- コミット/PR: **docs スコープとフロー成果物の2コミットに分割して push し、main への PR を作成する**ことを承認（マージはユーザー）
+- 実績.md の工数値: null のままでよい（未計測のため。推測値記入禁止に従う）
+- AWS 側操作の運用: 「AI が profile=portfolio で実行可（実行前報告付き）」を**恒久デフォルト化**（defaults.md に記録済み。prod リソースの置換・削除を伴う操作は対象外として都度確認）
+- dev テーブルの検証用記事1件: 残置でよい
+
+## 適用したデフォルト（事後報告済み）
+
+- [x] flow.size_default: M を暫定規模として適用（project.yaml）→ [2]で M 確定・報告済み
+- [x] ブランチ名は ASCII（`ai/dev-env-deploy`）を採用（AC 承認ゲートで事後報告済み）

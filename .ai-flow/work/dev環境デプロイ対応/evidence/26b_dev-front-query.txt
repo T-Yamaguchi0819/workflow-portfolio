@@ -1,0 +1,6 @@
+front GET /articles?q=ÉÑÉ}ÉrÉR: HTTP 200
+front GET /articles?category=åüèÿ: HTTP 200
+front GET /articles?q=ë∂ç›ÇµÇ»Ç¢åÍ: HTTP 200
+26_dev-front-search-q.html hit= True
+27_dev-front-search-category.html hit= True
+28_dev-front-search-nohit.html hit= False

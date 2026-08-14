@@ -1,0 +1,4 @@
+dev DELETE /api/articles/aea36ac9-679c-4465-8113-ada6f84cfebe: HTTP 204
+dev GET after delete: HTTP 404
+[]
+dev GET list (after delete): HTTP 200

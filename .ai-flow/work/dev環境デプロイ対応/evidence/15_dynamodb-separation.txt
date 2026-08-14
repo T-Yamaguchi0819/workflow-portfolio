@@ -1,0 +1,27 @@
+== dynamodb scan COUNT (read-only) ==
+{
+    "Count": 1,
+    "ScannedCount": 1,
+    "ConsumedCapacity": null
+}
+{
+    "Count": 1,
+    "ScannedCount": 1,
+    "ConsumedCapacity": null
+}
+== dev テーブルに SSR 確認記事が存在すること ==
+{
+    "Item": {
+        "category": {
+            "S": "����"
+        },
+        "id": {
+            "S": "c24e3379-e91a-4e9d-b06f-3d075cbedae1"
+        },
+        "title": {
+            "S": "dev ����m�F�p (SSR���� verify-20260814)"
+        }
+    }
+}
+== prod テーブルに dev 記事 ID が存在しないこと ==
+(empty output = Item なし)
