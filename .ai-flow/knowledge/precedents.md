@@ -82,7 +82,7 @@
 | AIが誤った内容 | SAM の template.yaml に日本語コメントを記載。Windows の SAM CLI がロケールエンコーディング（cp932）で読み UnicodeDecodeError |
 | 誤った理由・見落としたもの | SAM CLI (Windows) がテンプレートを UTF-8 でなくシステムロケールで読むこと |
 | 人間がどう修正したか | ユーザーのデプロイ失敗報告を受け、template.yaml を ASCII（英語コメント）のみに書き換え。ファイル冒頭に ASCII-only の注記を追加 |
-| 今後の防止策 | SAM/CloudFormation テンプレートは ASCII のみで書く（このリポジトリの慣行として固定） |
+| 今後の防止策 | SAM/CloudFormation テンプレートと samconfig.toml は ASCII のみで書く（このリポジトリの慣行として固定。samconfig.toml でも再発を確認済み） |
 | ルール化ステータス | 未 |
 
 | 項目 | 内容 |

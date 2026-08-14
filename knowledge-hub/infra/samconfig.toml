@@ -5,11 +5,12 @@ stack_name = "knowledge-hub"
 resolve_s3 = true
 s3_prefix = "knowledge-hub"
 region = "ap-northeast-1"
-# NOTE: profile はここに書かない (GitHub Actions では OIDC の環境認証を使うため)。
-# ローカルからデプロイする場合: sam deploy --profile portfolio
+# NOTE: Keep this file ASCII-only (SAM CLI on Windows reads it with cp932).
+# Do not set "profile" here: GitHub Actions uses OIDC env credentials.
+# For local deploys, pass it explicitly: sam deploy --profile portfolio
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "CorsAllowedOrigin=\"http://localhost:3000\""
+parameter_overrides = "CorsAllowedOrigin=\"https://main.d1e1o87p5asykz.amplifyapp.com\""
 image_repositories = []
 
 [default.global.parameters]
