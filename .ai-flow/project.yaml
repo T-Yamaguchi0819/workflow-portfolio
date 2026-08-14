@@ -59,10 +59,10 @@ build:
 
 verify:
   # [6]動作確認の方法
-  method: "ローカルで両サーバーを起動しブラウザで確認（backend: PORT=8081 mvn spring-boot:run ／ frontend: npm run dev → http://localhost:3000）。CRUD と検索の通しを最低限確認する"
+  method: "dev 環境で確認: ai/** へ push すると GitHub Actions が SAM スタック knowledge-hub-dev をデプロイし、Amplify が当該ブランチのフロントエンドを自動デプロイする。デプロイ済みのブランチ URL で CRUD と検索の通しを最低限確認する（ローカル起動での事前確認は任意の補助）"
   # エビデンス（キャプチャ・ログ）の保存先
   evidence_dir: ".ai-flow/work/{タスク名}/evidence/"
-  # ローカル起動手順の参照先
+  # ローカル起動手順の参照先（dev API の URL は SAM スタック knowledge-hub-dev の Output ApiEndpoint）
   local_env: "knowledge-hub/README.md（汎用手順）と .claude/CLAUDE.md（この開発機固有の JAVA_HOME・ポート事情）"
 
 # [7]ドキュメント反映

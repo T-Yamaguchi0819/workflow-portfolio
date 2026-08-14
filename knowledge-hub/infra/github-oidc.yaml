@@ -3,7 +3,8 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   GitHub Actions OIDC federation for knowledge-hub CD.
   Creates the GitHub OIDC identity provider and a deploy role that can only be
-  assumed by workflows on the main branch of the specified repository.
+  assumed by workflows on the main branch (prod) or ai/* branches (shared dev)
+  of the specified repository.
   No long-lived AWS access keys are stored in GitHub.
 
 Parameters:
@@ -52,13 +53,20 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-                # Restrict to pushes on the main branch of this repo only.
-                # GitHub's sub claim embeds immutable owner/repo IDs
-                # (owner@ownerId/repo@repoId) - verified via CloudTrail.
-                # This also protects against repo-rename hijacking.
-                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}@${GitHubOrgId}/${RepositoryName}@${RepositoryId}:ref:refs/heads/main
+              # Restrict to pushes on main (prod) or ai/* (shared dev) of this
+              # repo only. StringLike evaluates values without wildcards as
+              # exact matches, so the main entry behaves as before. IAM's "*"
+              # also matches "/", so multi-level branches (ai/fix/foo) match.
+              # GitHub's sub claim embeds immutable owner/repo IDs
+              # (owner@ownerId/repo@repoId) - verified via CloudTrail.
+              # This also protects against repo-rename hijacking.
+              StringLike:
+                token.actions.githubusercontent.com:sub:
+                  - !Sub repo:${GitHubOrg}@${GitHubOrgId}/${RepositoryName}@${RepositoryId}:ref:refs/heads/main
+                  - !Sub repo:${GitHubOrg}@${GitHubOrgId}/${RepositoryName}@${RepositoryId}:ref:refs/heads/ai/*
       # Personal sandbox account: AdministratorAccess is acceptable because the
-      # trust policy is limited to one repo/branch. For least privilege, replace
+      # trust policy is limited to one repo (main and ai/* branches only).
+      # For least privilege, replace
       # with a policy scoped to CloudFormation/S3/Lambda/APIGW/DynamoDB/IAM/Logs.
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess

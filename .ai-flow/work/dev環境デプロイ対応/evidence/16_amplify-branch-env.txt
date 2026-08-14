@@ -1,0 +1,30 @@
+== amplify get-branch ai/dev-env-deploy (branch env) ==
+{
+    "branchName": "ai/dev-env-deploy",
+    "stage": "DEVELOPMENT",
+    "environmentVariables": {
+        "API_BASE_URL": "https://rfpwpg8xo5.execute-api.ap-northeast-1.amazonaws.com"
+    },
+    "activeJobId": "0000000001"
+}
+== amplify get-branch main (branch env なし=アプリレベル prod URL を使用) ==
+{
+    "branchName": "main",
+    "stage": "PRODUCTION",
+    "environmentVariables": {}
+}
+== amplify get-app (アプリレベル env / autoBranch 設定) ==
+{
+    "environmentVariables": {
+        "AMPLIFY_DIFF_DEPLOY": "false",
+        "AMPLIFY_MONOREPO_APP_ROOT": "knowledge-hub/frontend",
+        "API_BASE_URL": "https://nx7936lj07.execute-api.ap-northeast-1.amazonaws.com"
+    },
+    "enableAutoBranchCreation": true,
+    "autoBranchCreationPatterns": [
+        "ai/*",
+        "ai/**"
+    ],
+    "enableBranchAutoDeletion": true,
+    "productionBranchName": "main"
+}

@@ -1,13 +1,14 @@
 name: Deploy
 
 # バックエンド(SAM スタック)の自動デプロイ。
+# main -> prod (スタック knowledge-hub) / ai/** -> 共有 dev (スタック knowledge-hub-dev)。
 # 認証は OIDC (infra/github-oidc.yaml の knowledge-hub-github-deploy ロール)。
 # 長期アクセスキーは GitHub に保存しない。
 # フロントエンドは Amplify Hosting の GitHub 連携が別途自動デプロイする(本WFの対象外)。
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'ai/**']
     paths:
       - 'knowledge-hub/backend/**'
       - 'knowledge-hub/infra/template.yaml'
@@ -19,8 +20,10 @@ permissions:
   id-token: write   # OIDC トークンの発行に必要
   contents: read
 
+# prod と dev は別グループ(相互キャンセル・直列待ちなし)。dev グループ内は直列で、
+# 複数 ai ブランチの同時 push は最新の待機だけが残る(共有 dev の後勝ち運用)。
 concurrency:
-  group: deploy-knowledge-hub
+  group: deploy-knowledge-hub-${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
   cancel-in-progress: false
 
 jobs:
@@ -28,9 +31,27 @@ jobs:
     name: Backend (SAM deploy)
     runs-on: ubuntu-latest
     # NOTE: GitHub Environment は指定しない。指定すると OIDC トークンの sub が
-    # environment:xxx 形式になり、IAM ロールの信頼条件 (ref:refs/heads/main) と
-    # 一致しなくなる。Environment 保護を使う場合は信頼ポリシー側も変更すること。
+    # environment:xxx 形式になり、IAM ロールの信頼条件 (ref:refs/heads/main と
+    # ref:refs/heads/ai/*) と一致しなくなる。Environment 保護を使う場合は
+    # 信頼ポリシー側も変更すること。
     steps:
+      # ブランチから環境を解決する(フェイルクローズ: main / ai/** 以外は
+      # workflow_dispatch 経由でもここで失敗し、デプロイに進まない)
+      - name: Resolve target environment
+        id: env
+        run: |
+          case "${GITHUB_REF}" in
+            refs/heads/main)
+              echo "config_env=default" >> "$GITHUB_OUTPUT"
+              echo "stack_name=knowledge-hub" >> "$GITHUB_OUTPUT" ;;
+            refs/heads/ai/*)
+              echo "config_env=dev" >> "$GITHUB_OUTPUT"
+              echo "stack_name=knowledge-hub-dev" >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "Unexpected ref: ${GITHUB_REF}" >&2
+              exit 1 ;;
+          esac
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4
@@ -56,11 +77,11 @@ jobs:
 
       - name: SAM deploy
         working-directory: knowledge-hub/infra
-        run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
+        run: sam deploy --config-env ${{ steps.env.outputs.config_env }} --no-confirm-changeset --no-fail-on-empty-changeset
 
       - name: Smoke test
         run: |
-          API=$(aws cloudformation describe-stacks --stack-name knowledge-hub \
+          API=$(aws cloudformation describe-stacks --stack-name ${{ steps.env.outputs.stack_name }} \
             --query "Stacks[0].Outputs[?OutputKey=='ApiEndpoint'].OutputValue" --output text)
           echo "API endpoint: $API"
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$API/api/articles")
