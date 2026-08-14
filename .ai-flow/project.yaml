@@ -69,6 +69,20 @@ verify:
 docs:
   enabled: true
   targets:
+    - name: "Knowledge Hub 設計書（基本設計）"
+      location: "knowledge-hub/docs/設計書.md"
+      format: "markdown"
+      sample: ""
+      style: ""
+      templates: []
+      notes: "機能・画面・API・データ・モジュール構成を変えたら該当節を必ず更新。§9.4（割り切りと拡張方針）は実装との乖離が出やすいので注意"
+    - name: "画面設計書（画面単位。S-01〜S-04）"
+      location: "knowledge-hub/docs/screens/"
+      format: "markdown"
+      sample: ""
+      style: ""
+      templates: []
+      notes: "1画面1ファイル。画面の項目・イベント・メッセージ・遷移を変えたら該当画面のファイルを更新。画面を追加したら採番して新規作成し、設計書.md §3.1 の一覧にも行を追加。S-04 は S-03 との差分定義形式"
     - name: "Knowledge Hub README（アーキテクチャ・API仕様・手順）"
       location: "knowledge-hub/README.md"
       format: "markdown"

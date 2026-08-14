@@ -9,6 +9,8 @@
 | データベース | Amazon DynamoDB | 記事の永続化。カテゴリ絞り込みは GSI で Query |
 | インフラ | AWS Lambda + API Gateway (SAM) | サーバーレス実行基盤。SnapStart でコールドスタート対策 |
 
+詳細な設計(画面・API・データ・モジュール構成・非機能)は **[設計書](docs/設計書.md)** を参照。
+
 ## アーキテクチャ
 
 ```mermaid
