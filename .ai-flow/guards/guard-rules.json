@@ -1,42 +1,49 @@
 {
   "_comment": [
-    "guard-rules.json — 禁止パターンLint（verify_diff.py）のルール定義。導入時に必ず編集する。",
+    "guard-rules.json — 禁止パターンLint（verify_diff.py）のルール定義。",
     "project.yaml の constraints（AIが読む宣言）のうち、正規表現で機械検出できるものをここに実装する。",
     "repos: 検査対象リポジトリ（project.yaml のあるプロジェクトルートからの相対パス）。",
     "rules[].severity: ERROR=コミットをブロック／WARN=報告のみ。",
     "rules[].extensions: 対象拡張子の配列（null=scan_extensions 全体）。",
     "rules[].flags: 'i' で大文字小文字を無視。",
     "rules[].suppressed_by: 同じ行で指定IDのルールが検出済みなら報告を抑止（汎用ルールの二重報告防止）。",
-    "以下の rules は例。sql-destructive は多くの業務システムで有効なので残すことを推奨、",
-    "example-* は自プロジェクトの禁止事項に置き換える。運用中に同種の失敗が3回起きたらルールを追加する。"
+    "運用中に同種の失敗が3回起きたらルールを追加する（precedents.md → ルール化サイクル）。"
   ],
   "repos": ["."],
-  "scan_extensions": [".java", ".ts", ".tsx", ".js", ".jsx", ".sql", ".html", ".xml", ".jsp", ".py", ".cs", ".vue"],
-  "exclude_segments": ["target", "node_modules", "dist", "build", ".git", "vendor", "generated"],
+  "scan_extensions": [".java", ".ts", ".tsx", ".js", ".jsx", ".json", ".yaml", ".yml", ".py", ".css", ".md"],
+  "exclude_segments": ["target", "node_modules", "dist", "build", ".next", ".git", ".aws-sam", "generated", "package-lock.json"],
   "rules": [
     {
-      "id": "sql-destructive",
+      "id": "aws-credentials",
       "severity": "ERROR",
       "extensions": null,
-      "pattern": "\\bDELETE\\s+FROM\\b|\\bTRUNCATE\\s+TABLE\\b|\\bDROP\\s+TABLE\\b",
-      "flags": "i",
-      "message": "破壊的SQL（物理削除・TRUNCATE・DROP）を検出。論理削除等の正規手段を使う（プロジェクトの constraints 参照）"
-    },
-    {
-      "id": "example-forbidden-api",
-      "severity": "ERROR",
-      "extensions": [".java"],
-      "pattern": "\\b(createStatement|prepareStatement|prepareCall)\\s*\\(",
+      "pattern": "AKIA[0-9A-Z]{16}|aws_secret_access_key\\s*[=:]|(?i:secret|password|api_?key)\\s*[=:]\\s*[\"'][A-Za-z0-9+/_-]{20,}[\"']",
       "flags": "",
-      "message": "例: 生SQL（JDBC直叩き）は禁止。O/Rマッパーの正規APIを使う（自プロジェクトのルールに置き換えること）"
+      "message": "AWS 認証情報・秘密情報らしき文字列のハードコードを検出。環境変数または .env（git 管理外）経由にする（project.yaml constraints 参照）"
     },
     {
-      "id": "example-debug-leftover",
+      "id": "dynamodb-on-demand",
+      "severity": "ERROR",
+      "extensions": [".yaml", ".yml"],
+      "pattern": "PAY_PER_REQUEST",
+      "flags": "",
+      "message": "DynamoDB のオンデマンド課金化を検出。常時無料枠（プロビジョンド 25RCU/WCU）を維持する設計のため、課金モードは変更しない（project.yaml constraints 参照）"
+    },
+    {
+      "id": "frontend-console-log",
       "severity": "WARN",
-      "extensions": [".ts", ".tsx", ".js", ".jsx", ".vue"],
+      "extensions": [".ts", ".tsx", ".js", ".jsx"],
       "pattern": "console\\.log\\s*\\(",
       "flags": "",
-      "message": "例: console.log の残留を検出（デバッグコードの消し忘れ確認。不要なら本ルールを削除）"
+      "message": "console.log の残留を検出（デバッグコードの消し忘れ確認。意図的なログなら console.error/warn を検討）"
+    },
+    {
+      "id": "java-stdout",
+      "severity": "WARN",
+      "extensions": [".java"],
+      "pattern": "System\\.(out|err)\\.print",
+      "flags": "",
+      "message": "System.out/err への直接出力を検出（SLF4J ロガーを使う）"
     }
   ]
 }
