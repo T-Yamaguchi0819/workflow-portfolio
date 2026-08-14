@@ -76,6 +76,13 @@ docs:
       style: ""
       templates: []
       notes: "機能・画面・API・データ・モジュール構成を変えたら該当節を必ず更新。§9.4（割り切りと拡張方針）は実装との乖離が出やすいので注意"
+    - name: "テーブル定義書（DynamoDB）"
+      location: "knowledge-hub/docs/テーブル定義書.md"
+      format: "markdown"
+      sample: ""
+      style: ""
+      templates: []
+      notes: "定義の正は infra/template.yaml。属性・インデックス・キャパシティを変えたら template.yaml と本書を同時に更新する"
     - name: "画面設計書（画面単位。S-01〜S-04）"
       location: "knowledge-hub/docs/screens/"
       format: "markdown"
