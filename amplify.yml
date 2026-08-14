@@ -1,0 +1,23 @@
+# Amplify Hosting のビルド設定(モノレポ: knowledge-hub/frontend が対象)
+version: 1
+applications:
+  - appRoot: knowledge-hub/frontend
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm ci
+        build:
+          commands:
+            # Amplify の環境変数を SSR ランタイムへ引き渡す
+            # (ビルド時に .env.production へ書き出すのが Amplify の定石)
+            - env | grep -e API_BASE_URL >> .env.production || true
+            - npm run build
+      artifacts:
+        baseDirectory: .next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+          - .next/cache/**/*
