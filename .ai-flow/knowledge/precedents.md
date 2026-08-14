@@ -94,3 +94,13 @@
 | 人間がどう修正したか | Actions の失敗ログ（Not authorized to perform sts:AssumeRoleWithWebIdentity）から特定し、environment 指定を削除 |
 | 今後の防止策 | OIDC の信頼条件と workflow の environment 指定は必ずセットで設計する（片方だけ変えない）。deploy.yml にコメントで注意書き済み |
 | ルール化ステータス | 未 |
+
+| 項目 | 内容 |
+|------|------|
+| ID | F-007 |
+| 発生日／タスク | 2026-08-14／GitHub Actions CD 構築 |
+| AIが誤った内容 | OIDC 信頼条件の sub を旧形式（repo:owner/repo:ref:...）で記述。GitHub の仕様変更で sub は owner@ownerId/repo@repoId の ID 埋め込み形式になっており不一致 → AssumeRole 拒否 |
+| 誤った理由・見落としたもの | GitHub OIDC の sub クレーム形式変更（改名なりすまし対策で不変 ID が埋め込まれる）。学習時点の知識で書き、実際のクレームを確認しなかった |
+| 人間がどう修正したか | CloudTrail の AccessDenied イベントから実際の sub を取得して特定。信頼条件を ID 埋め込み形式に修正（gh api で ID を照合） |
+| 今後の防止策 | OIDC 連携の失敗調査は推測でなく CloudTrail の実クレームを見る。sub 形式は変わり得る前提で、拒否時はまず実物と突き合わせる |
+| ルール化ステータス | 未 |

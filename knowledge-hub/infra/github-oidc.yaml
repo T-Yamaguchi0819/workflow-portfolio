@@ -11,10 +11,18 @@ Parameters:
     Type: String
     Default: T-Yamaguchi0819
     Description: GitHub user/organization name
+  GitHubOrgId:
+    Type: String
+    Default: '162123096'
+    Description: Immutable GitHub user/organization ID (gh api user --jq .id)
   RepositoryName:
     Type: String
     Default: workflow-portfolio
     Description: GitHub repository name
+  RepositoryId:
+    Type: String
+    Default: '1333678075'
+    Description: Immutable GitHub repository ID (gh api repos/OWNER/REPO --jq .id)
 
 Resources:
   GitHubOidcProvider:
@@ -44,8 +52,11 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-                # Restrict to pushes on the main branch of this repo only
-                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}/${RepositoryName}:ref:refs/heads/main
+                # Restrict to pushes on the main branch of this repo only.
+                # GitHub's sub claim embeds immutable owner/repo IDs
+                # (owner@ownerId/repo@repoId) - verified via CloudTrail.
+                # This also protects against repo-rename hijacking.
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrg}@${GitHubOrgId}/${RepositoryName}@${RepositoryId}:ref:refs/heads/main
       # Personal sandbox account: AdministratorAccess is acceptable because the
       # trust policy is limited to one repo/branch. For least privilege, replace
       # with a policy scoped to CloudFormation/S3/Lambda/APIGW/DynamoDB/IAM/Logs.
